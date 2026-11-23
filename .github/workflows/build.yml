@@ -1,0 +1,31 @@
+name: Build Unsigned IPA
+on: [workflow_dispatch]
+
+jobs:
+  build:
+  
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build Capacitor iOS App
+        run: |
+          mkdir www && mv index.html www/
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/ios
+          npx cap init "MyApp" "com.example.myapp" --web-dir=www
+          npx cap add ios
+          cd ios/App
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO build
+          mkdir Payload
+          cp -r build/Release-iphoneos/App.app Payload/
+          zip -r ../../App.ipa Payload
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-App-IPA
+          path: App.ipa
+          
